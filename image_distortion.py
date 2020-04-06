@@ -54,6 +54,7 @@ def distort_image(img):
             
             distort[y_distorted][x_distorted]=img[y][x]
 
+            #increase the 'reach' of each pixel to ensure less black lines at cost of time
             itters = ((0,1),(0,2),(1,0),(2,0))
             for i in itters:
                 try:
