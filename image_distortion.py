@@ -9,7 +9,7 @@ undistored_link = "images/undistorted"
 
 #change this value for diff image save and read
 img_pick = "mount"
-img_undistpick = "mountK1=1e-11_K2=1e-16_K3=1e-17_nofill"
+img_undistpick = "mountK1=0.4_K2=0.05_K3=0.03_notext"
 #chosen image
 img = cv2.imread(undistored_link +"/"+img_pick+".jpg")
 #cv2.imshow("raw_image", img)
@@ -19,7 +19,7 @@ img = cv2.imread(undistored_link +"/"+img_pick+".jpg")
 imgundist = cv2.imread(distored_link +"/"+img_undistpick+".jpg")
 
 #distortion params
-K1=.4
+K1=0.4
 K2=.05
 K3=.03
 
@@ -65,11 +65,13 @@ def distort_image(img):
     cv2.imshow("test",distort)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
+    name = "K1="+str(K1)+"_K2="+str(K2)+"_K3="+str(K3)
+
+    cv2.imwrite(distored_link +"/"+img_pick+name+"_notext.jpg", distort)
+
     unfil_copy = distort.copy()
     #writting to file - no fill
     position = ((int) (h*sf *8//8), (int) (w*sf * 4//8))
-    name = "K1="+str(K1)+"_K2="+str(K2)+"_K3="+str(K3)
     wtext = cv2.putText(unfil_copy, name, 
         position,cv2.FONT_HERSHEY_SIMPLEX,1,(0, 255, 0), 4)
     cv2.imwrite(distored_link +"/"+img_pick+name+"_nofill.jpg", wtext)
@@ -116,7 +118,7 @@ def correct_blanks(img,points):
     return img
 
 
-def undistort_image(img):
+def undistort_image(img,k1,k2,k3):
     h,w,d = img.shape
     #scallling factor
     sf = 1
@@ -129,27 +131,28 @@ def undistort_image(img):
             x_norm = (x-x_cent)/x_cent
             y_norm = (y-y_cent)/y_cent 
             r = np.sqrt(x_norm**2 + y_norm**2)
-            x_undist_norm = cord_distort(x_norm,r)
-            y_undist_norm = cord_distort(y_norm,r)
-            x_undistorted = int(x_dist_norm*x_cent + x_cent) 
-            y_undistorted = int(y_dist_norm*y_cent + y_cent)
+            x_undist_norm = uncord_distort(x_norm,r,k1,k2,k3)
+            y_undist_norm = uncord_distort(y_norm,r,k1,k2,k3)
+            x_undistorted = int(x_undist_norm*x_cent + x_cent) 
+            y_undistorted = int(y_undist_norm*y_cent + y_cent)
             try: 
-                undistort[x][y]=img[y_undistorted][x_undistorted]
+                undistort[y][x]=img[y_undistorted][x_undistorted]
             except:
                 print("OOB")
-     #writting to file - with blank filling
-    position = ((int) (h*sf *8//8), (int) (w*sf * 4//8))
+    
+    name = "K1="+str(k1)+"_K2="+str(k2)+"_K3="+str(k3)
+    position = ((int) (h*sf *6//8), (int) (w*sf * 4//8))
     wtext = cv2.putText(undistort, name, 
         position,cv2.FONT_HERSHEY_SIMPLEX,1,(0, 255, 0), 4)
-    cv2.imwrite(undistored_link +"/"+img_undistpick+name+"undist.jpg", wtext)
+    cv2.imwrite(undistored_link +"/"+"mount"+name+"undist.jpg", wtext)
 
     return undistort
 
 def cord_distort(c,r):
     return c*(1+K1*r**2 + K2*r**4 + K3*r**6)/x_scale
 
-def cord_undistort(c,r):
-    return c*x_scale/(1+K1*r**2 + K2*r**4 + K3*r**6)
+def uncord_distort(c,r,k1,k2,k3):
+    return c*(1+k1*r**2 + k2*r**4 + k3*r**6)/x_scale
 
 def distpic():
     disp = distort_image(img)
@@ -158,16 +161,21 @@ def distpic():
     cv2.destroyAllWindows() # destroys the window showing image
 
 def undistpic():
-    disp = undistort_image(imgundist)
-    cv2.imshow("undistorted_image",disp)
+    disp1 = undistort_image(imgundist,.4,0,0)
+    disp2 = undistort_image(imgundist,.4,.05,.03)
+    disp3 = undistort_image(imgundist,.4,.05,0)
+    
+    cv2.imshow("distorted_image",disp1)
+    cv2.imshow("distorted_image",disp2)
+    cv2.imshow("distorted_image",disp3)
+
     cv2.waitKey(0) # waits until a key is pressed
     cv2.destroyAllWindows() # destroys the window showing image
 
 
 if __name__ == "__main__":
-    #chae_shit(img)
-    distpic()
-    #undistpic()
+    #distpic()
+    undistpic()
 
 
 
